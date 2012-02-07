@@ -1,38 +1,20 @@
 #include <ncurses.h>
 
-char kentta[12][26] = { {' ',' ','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#','#',' ',' ',' ',' '},
-			{' ',' ','#','#',' ',' ',' ',' ',' ',' ','#','#','#','#',' ',' ',' ',' ',' ',' ','#','#','#','#','#','#'},
-			{' ',' ','#','#',' ',' ','[',']',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','#','#'},
-			{' ',' ','#','#','#','#','[',']','#','#','#','#','#','#',' ',' ','#','#','#','#',' ',' ',' ',' ','#','#'},
-			{' ',' ','#','#',' ',' ',' ',' ','#','#','#','#',' ',' ','[',']',' ',' ','#','#',' ',' ','#','#','#','#'},
-			{' ',' ','#','#',' ',' ','[',']','(',')','(',')','(',')','(',')','(',')','(',')',' ',' ','#','#',' ',' '},
-			{'#','#','#','#',' ',' ','#','#','#','#','#','#',' ',' ','(',')',' ',' ','#','#',' ',' ','#','#',' ',' '},
-			{'#','#',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','[',']','#','#','#','#','#','#','[',']','#','#',' ',' '},
-			{'#','#',' ',' ',' ',' ',' ',' ','#','#',' ',' ',' ',' ',' ',' ',' ',' ','[',']','X','X','#','#',' ',' '},
-			{'#','#','#','#','#','#','#','#','#','#','[',']','#','#',' ',' ','#','#','#','#','#','#','#','#',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' ','#','#',' ',' ',' ',' ',' ',' ','#','#',' ',' ',' ',' ',' ',' ',' ',' '},
-			{' ',' ',' ',' ',' ',' ',' ',' ','#','#','#','#','#','#','#','#','#','#',' ',' ',' ',' ',' ',' ',' ',' '}};
+#include "sokoban.h"
 
-struct point {
-	int y;
-	int x;
-};
-
-struct point alkukohta;
-struct point nykykohta;
+struct point ak; /* aloituskohta */
+struct point nk; /* nykykohta */
 
 int main()
 {
 	int ch = 0;
-	char m;
-	int x, y;
 
-	alkukohta.y = 21;
-	alkukohta.x = 9;
+	ak.x = 20;
+	ak.y = 8;
 	initscr();			/* Start curses mode		*/
 	raw();				/* Line buffering disabled	*/
 	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-	curs_set(0);			// hide the cursor
+	curs_set(0);			/* hide the cursor		*/
 	noecho();			/* Don't echo() while we do getch */
 
 	if (has_colors()) {
@@ -53,35 +35,111 @@ int main()
 		init_pair(7, COLOR_WHITE,   COLOR_GREEN);
 	}
 
-		void piirra_kentta();
-	
-	while(ch != 'q')
-		ch = getch();			
+	piirra_kentta();
+	nk = ak;
 
-		switch (ch) {
-		case KEY_UP:
-			move();
-			addch("*");
+	while(ch != 'q') {
+		ch = getch();
+		kentta[nk.y][nk.x] = ' ';
+		kentta[nk.y][nk.x + 1] = ' ';
+
+		if (ch == 'q') {
 			break;
 		}
+		siirra(ch, &nk);
+		kentta[nk.y][nk.x] = 'X';
+		kentta[nk.y][nk.x + 1] = 'X';
+		piirra_kentta();
 		refresh();
-
-
-    //	getch();			/* Wait for user input */
+	}
 	endwin();			/* End curses mode		  */
 
 	return 0;
 }
 
-void 
-siirra()
+void
+siirra(int input, struct point *nk) {
+	switch (input) {
+	case KEY_UP:
+		if (kentta[nk->y - 1][nk->x] != '#') {
+			if(kentta[nk->y - 1][nk->x] == '[' && kentta[nk->y - 2][nk->x] != '#' && kentta[nk->y - 2][nk->x] != '[') {
+				kentta[nk->y - 1][nk->x] = 'X';
+				kentta[nk->y - 1][nk->x + 1] = 'X';
+				kentta[nk->y - 2][nk->x] = '[';
+				kentta[nk->y - 2][nk->x + 1] = ']';
+				nk->y = nk->y -1;
+				break;
+			} else if(kentta[nk->y - 1][nk->x] != '[') {
+				kentta[nk->y - 1][nk->x] = 'X';
+				kentta[nk->y - 1][nk->x + 1] = 'X';
+				nk->y = nk->y -1;
+				break;
+			}
+		}
+		break;
+	case KEY_RIGHT:
+		if (kentta[nk->y][nk->x + 2] != '#') {
+			if(kentta[nk->y][nk->x + 2] == '[' && kentta[nk->y][nk->x + 4] != '#' && kentta[nk->y][nk->x + 4] != '[') {
+				kentta[nk->y][nk->x + 2] = 'X';
+				kentta[nk->y][nk->x + 3] = 'X';
+				kentta[nk->y][nk->x + 4] = '[';
+				kentta[nk->y][nk->x + 5] = ']';
+				nk->x = nk->x + 2;
+				break;
+			} else if(kentta[nk->y][nk->x + 2] != '[') {
+				kentta[nk->y][nk->x + 2] = 'X';
+				kentta[nk->y][nk->x + 3] = 'X';
+				nk->x = nk->x + 2;
+				break;
+			}
+		}
+		break;
+	case KEY_LEFT:
+		if (kentta[nk->y][nk->x - 2] != '#') {
+			if(kentta[nk->y][nk->x - 2] == '[' && kentta[nk->y][nk->x - 4] != '#' && kentta[nk->y][nk->x - 4] != '[') {
+				kentta[nk->y][nk->x - 2] = 'X';
+				kentta[nk->y][nk->x - 1] = 'X';
+				kentta[nk->y][nk->x - 4] = '[';
+				kentta[nk->y][nk->x - 3] = ']';
+				nk->x = nk->x - 2;
+				break;
+			} else if(kentta[nk->y][nk->x - 2] != '[') {
+				kentta[nk->y][nk->x - 2] = 'X';
+				kentta[nk->y][nk->x - 1] = 'X';
+				nk->x = nk->x - 2;
+				break;
+			}
+		}
+		break;
+	case KEY_DOWN:
+		if (kentta[nk->y + 1][nk->x] != '#') {
+			if(kentta[nk->y + 1][nk->x] == '[' && kentta[nk->y + 2][nk->x] != '#' && kentta[nk->y + 2][nk->x] != '[') {
+				kentta[nk->y + 1][nk->x] = 'X';
+				kentta[nk->y + 1][nk->x + 1] = 'X';
+				kentta[nk->y + 2][nk->x] = '[';
+				kentta[nk->y + 2][nk->x + 1] = ']';
+				nk->y = nk->y +1;
+				break;
+			} else if(kentta[nk->y + 1][nk->x] != '[') {
+				kentta[nk->y + 1][nk->x] = 'X';
+				kentta[nk->y + 1][nk->x + 1] = 'X';
+				nk->y = nk->y +1;
+				break;
+			}
+		}
+		break;
+	}
+}
 
-void piirra_kentta() {
-
-	for (y = 0; y < 26; y++) {
-		for (x = 0; x < 12; x++) {
-			move(x, y);
-			char m = kentta[x][y];
+void piirra_kentta(void) {
+	int x = 0;
+	int y = 0;
+	int i = 0;
+	char m ;
+	for (x = 0; x < 26; x++) {
+		for (y = 0; y < 12; y++) {
+			move(y, x);
+			m = kentta[y][x];
 			attrset(COLOR_PAIR(6));
 			if (m == '#') {
 				attrset(COLOR_PAIR(1));
@@ -95,8 +153,19 @@ void piirra_kentta() {
 			else if (m == 'X') {
 				attrset(COLOR_PAIR(4));
 			}
-			addch(kentta[x][y]);
+			addch(kentta[y][x]);
 			refresh();
 		}
 	}
+	attrset(COLOR_PAIR(2));
+	for (i = 0; i < 8; i++) {
+		if (kentta[kohteet[i][1]][kohteet[i][0]] == ' ') {
+			move(kohteet[i][1],kohteet[i][0]);
+			addch('(');
+			move(kohteet[i][1],kohteet[i][0] + 1);
+			addch(')');
+		}
+	}
+
 }
+
